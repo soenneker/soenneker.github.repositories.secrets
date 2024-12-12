@@ -1,8 +1,8 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Octokit;
+using Soenneker.Extensions.Arrays.Bytes;
 using Soenneker.Extensions.String;
 using Soenneker.Extensions.Task;
 using Soenneker.Extensions.ValueTask;
@@ -26,7 +26,7 @@ public class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
     public async ValueTask SetSecret(string projectName, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default)
     {
         secretValue.ThrowIfNullOrEmpty(nameof(secretValue));
-        secretValue.ThrowIfNullOrEmpty(nameof(secretName));
+        secretName.ThrowIfNullOrEmpty(nameof(secretName));
 
         if (log)
             _logger.LogInformation("Setting Secret on repo ({repo}): {secretName} // {secretValue} ...", projectName, secretName, secretValue.Mask());
@@ -37,11 +37,11 @@ public class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
 
         SecretsPublicKey? secretsPublicKey = await client.Repository.Actions.Secrets.GetPublicKey(gitHubUsername, projectName).NoSync();
 
-        byte[] publicKeyBytes = Convert.FromBase64String(secretsPublicKey!.Key);
+        byte[] publicKeyBytes = secretsPublicKey!.Key.ToBytesFromBase64();
 
         byte[] sealedPublicKeyBox = Sodium.SealedPublicKeyBox.Create(secretValueBytes, publicKeyBytes);
 
-        string encryptedValue = Convert.ToBase64String(sealedPublicKeyBox);
+        string encryptedValue = sealedPublicKeyBox.ToBase64String();
 
         await client.Repository.Actions.Secrets.CreateOrUpdate(gitHubUsername, projectName, secretName, new UpsertRepositorySecret
         {
