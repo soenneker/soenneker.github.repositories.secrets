@@ -23,7 +23,7 @@ public class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
         _gitHubClientUtil = gitHubClientUtil;
     }
 
-    public async ValueTask SetSecret(string projectName, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default)
+    public async ValueTask Upsert(string projectName, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default)
     {
         secretValue.ThrowIfNullOrEmpty(nameof(secretValue));
         secretName.ThrowIfNullOrEmpty(nameof(secretName));

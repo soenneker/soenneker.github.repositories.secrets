@@ -8,5 +8,5 @@ namespace Soenneker.GitHub.Repositories.Secrets.Abstract;
 /// </summary>
 public interface IGitHubRepositoriesSecretsUtil
 {
-    ValueTask SetSecret(string repository, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default);
+    ValueTask Upsert(string repository, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default);
 }
