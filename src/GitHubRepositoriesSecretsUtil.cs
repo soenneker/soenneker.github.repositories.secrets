@@ -23,19 +23,19 @@ public class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
         _gitHubClientUtil = gitHubClientUtil;
     }
 
-    public async ValueTask Upsert(string projectName, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default)
+    public async ValueTask Upsert(string owner, string name, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default)
     {
         secretValue.ThrowIfNullOrEmpty(nameof(secretValue));
         secretName.ThrowIfNullOrEmpty(nameof(secretName));
 
         if (log)
-            _logger.LogInformation("Setting Secret on repo ({repo}): {secretName} // {secretValue} ...", projectName, secretName, secretValue.Mask());
+            _logger.LogInformation("Upserting secret on repo ({repo}): {secretName} // {secretValue} ...", name, secretName, secretValue.Mask());
 
         byte[] secretValueBytes = secretValue.ToBytes();
 
         GitHubClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-        SecretsPublicKey? secretsPublicKey = await client.Repository.Actions.Secrets.GetPublicKey(gitHubUsername, projectName).NoSync();
+        SecretsPublicKey? secretsPublicKey = await client.Repository.Actions.Secrets.GetPublicKey(owner, name).NoSync();
 
         byte[] publicKeyBytes = secretsPublicKey!.Key.ToBytesFromBase64();
 
@@ -43,10 +43,22 @@ public class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
 
         string encryptedValue = sealedPublicKeyBox.ToBase64String();
 
-        await client.Repository.Actions.Secrets.CreateOrUpdate(gitHubUsername, projectName, secretName, new UpsertRepositorySecret
+        await client.Repository.Actions.Secrets.CreateOrUpdate(owner, name, secretName, new UpsertRepositorySecret
         {
             EncryptedValue = encryptedValue,
             KeyId = secretsPublicKey.KeyId
         }).NoSync();
+    }
+
+    public async ValueTask Delete(string owner, string name, string secretName, bool log = true, CancellationToken cancellationToken = default)
+    {
+        secretName.ThrowIfNullOrEmpty(nameof(secretName));
+
+        if (log)
+            _logger.LogInformation("Deleting secret on repo ({repo}): {secretName} ...", name, secretName);
+
+        GitHubClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+
+        await client.Repository.Actions.Secrets.Delete(owner, name, secretName).NoSync();
     }
 }
