@@ -11,14 +11,14 @@ public interface IGitHubRepositoriesSecretsUtil
     /// <summary>
     /// Creates or updates a secret in the specified repository.
     /// </summary>
-    /// <param name="repository">The name of the repository where the secret will be stored.</param>
-    /// <param name="gitHubUsername">The GitHub username associated with the repository.</param>
+    /// <param name="owner">The GitHub username associated with the repository.</param>
+    /// <param name="name">The name of the repository where the secret will be stored.</param>
     /// <param name="secretName">The name of the secret to create or update.</param>
     /// <param name="secretValue">The value of the secret.</param>
     /// <param name="log">Indicates whether to log the operation. Defaults to <c>true</c>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
-    ValueTask Upsert(string repository, string gitHubUsername, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default);
+    ValueTask Upsert(string owner, string name, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a secret from the specified repository.
