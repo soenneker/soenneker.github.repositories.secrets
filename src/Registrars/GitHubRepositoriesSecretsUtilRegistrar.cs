@@ -13,18 +13,22 @@ public static class GitHubRepositoriesSecretsUtilRegistrar
     /// <summary>
     /// Adds <see cref="IGitHubRepositoriesSecretsUtil"/> as a singleton service. <para/>
     /// </summary>
-    public static void AddGitHubRepositoriesSecretsUtilAsSingleton(this IServiceCollection services)
+    public static IServiceCollection AddGitHubRepositoriesSecretsUtilAsSingleton(this IServiceCollection services)
     {
-        services.AddGitHubClientUtilAsSingleton();
-        services.TryAddSingleton<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
+        services.AddGitHubClientUtilAsSingleton()
+                .TryAddSingleton<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
+
+        return services;
     }
 
     /// <summary>
     /// Adds <see cref="IGitHubRepositoriesSecretsUtil"/> as a scoped service. <para/>
     /// </summary>
-    public static void AddGitHubRepositoriesSecretsUtilAsScoped(this IServiceCollection services)
+    public static IServiceCollection AddGitHubRepositoriesSecretsUtilAsScoped(this IServiceCollection services)
     {
-        services.AddGitHubClientUtilAsSingleton();
-        services.TryAddScoped<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
+        services.AddGitHubClientUtilAsSingleton()
+                .TryAddScoped<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
+
+        return services;
     }
 }
