@@ -15,8 +15,7 @@ public static class GitHubRepositoriesSecretsUtilRegistrar
     /// </summary>
     public static IServiceCollection AddGitHubRepositoriesSecretsUtilAsSingleton(this IServiceCollection services)
     {
-        services.AddGitHubOpenApiClientUtilAsSingleton()
-                .TryAddSingleton<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
+        services.AddGitHubOpenApiClientUtilAsSingleton().TryAddSingleton<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
 
         return services;
     }
@@ -26,8 +25,7 @@ public static class GitHubRepositoriesSecretsUtilRegistrar
     /// </summary>
     public static IServiceCollection AddGitHubRepositoriesSecretsUtilAsScoped(this IServiceCollection services)
     {
-        services.AddGitHubOpenApiClientUtilAsSingleton()
-                .TryAddScoped<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
+        services.AddGitHubOpenApiClientUtilAsSingleton().TryAddScoped<IGitHubRepositoriesSecretsUtil, GitHubRepositoriesSecretsUtil>();
 
         return services;
     }
