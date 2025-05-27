@@ -1,64 +1,137 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Octokit;
-using Soenneker.Extensions.Arrays.Bytes;
-using Soenneker.Extensions.String;
+using Sodium;
 using Soenneker.Extensions.Task;
 using Soenneker.Extensions.ValueTask;
-using Soenneker.GitHub.Client.Abstract;
+using Soenneker.GitHub.ClientUtil.Abstract;
+using Soenneker.GitHub.OpenApiClient;
+using Soenneker.GitHub.OpenApiClient.Models;
+using Soenneker.GitHub.OpenApiClient.Repos.Item.Item.Actions.OrganizationSecrets;
+using Soenneker.GitHub.OpenApiClient.Repos.Item.Item.Actions.Secrets;
+using Soenneker.GitHub.OpenApiClient.Repos.Item.Item.Actions.Secrets.Item;
 using Soenneker.GitHub.Repositories.Secrets.Abstract;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Soenneker.GitHub.Repositories.Secrets;
 
-///<inheritdoc cref="IGitHubRepositoriesSecretsUtil"/>
-public class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
+/// <summary>
+/// Utility class for managing GitHub repository secrets
+/// </summary>
+public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
 {
     private readonly ILogger<GitHubRepositoriesSecretsUtil> _logger;
-    private readonly IGitHubClientUtil _gitHubClientUtil;
+    private readonly IGitHubOpenApiClientUtil _gitHubClientUtil;
 
-    public GitHubRepositoriesSecretsUtil(ILogger<GitHubRepositoriesSecretsUtil> logger, IGitHubClientUtil gitHubClientUtil)
+    public GitHubRepositoriesSecretsUtil(ILogger<GitHubRepositoriesSecretsUtil> logger, IGitHubOpenApiClientUtil gitHubClientUtil)
     {
         _logger = logger;
         _gitHubClientUtil = gitHubClientUtil;
     }
 
-    public async ValueTask Upsert(string owner, string name, string secretName, string secretValue, bool log = true, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Gets all secrets for a repository
+    /// </summary>
+    public async ValueTask<List<ActionsSecret>> Get(string owner, string repo, CancellationToken cancellationToken = default)
     {
-        secretValue.ThrowIfNullOrEmpty(nameof(secretValue));
-        secretName.ThrowIfNullOrEmpty(nameof(secretName));
-
-        if (log)
-            _logger.LogInformation("Upserting secret on repo ({repo}): {secretName} // {secretValue} ...", name, secretName, secretValue.Mask());
-
-        byte[] secretValueBytes = secretValue.ToBytes();
-
-        GitHubClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
-
-        SecretsPublicKey? secretsPublicKey = await client.Repository.Actions.Secrets.GetPublicKey(owner, name).NoSync();
-
-        byte[] publicKeyBytes = secretsPublicKey!.Key.ToBytesFromBase64();
-
-        byte[] sealedPublicKeyBox = Sodium.SealedPublicKeyBox.Create(secretValueBytes, publicKeyBytes);
-
-        string encryptedValue = sealedPublicKeyBox.ToBase64String();
-
-        await client.Repository.Actions.Secrets.CreateOrUpdate(owner, name, secretName, new UpsertRepositorySecret
+        try
         {
-            EncryptedValue = encryptedValue,
-            KeyId = secretsPublicKey.KeyId
-        }).NoSync();
+            GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+            SecretsGetResponse? response = await client.Repos[owner][repo].Actions.Secrets.GetAsSecretsGetResponseAsync(cancellationToken: cancellationToken).NoSync();
+            return response?.Secrets ?? [];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting secrets for repository {Owner}/{Repo}", owner, repo);
+            throw;
+        }
     }
 
-    public async ValueTask Delete(string owner, string name, string secretName, bool log = true, CancellationToken cancellationToken = default)
+    public async ValueTask<List<ActionsSecret>> GetOrganization(string owner, string repo, CancellationToken cancellationToken = default)
     {
-        secretName.ThrowIfNullOrEmpty(nameof(secretName));
+        try
+        {
+            GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+            OrganizationSecretsGetResponse? response = await client.Repos[owner][repo].Actions.OrganizationSecrets.GetAsOrganizationSecretsGetResponseAsync(cancellationToken: cancellationToken).NoSync();
+            return response?.Secrets ?? new List<ActionsSecret>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting organization secrets for repository {Owner}/{Repo}", owner, repo);
+            throw;
+        }
+    }
 
-        if (log)
-            _logger.LogInformation("Deleting secret on repo ({repo}): {secretName} ...", name, secretName);
+    public async ValueTask<ActionsSecret> Get(string owner, string repo, string name, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+            return await client.Repos[owner][repo].Actions.Secrets[name].GetAsync(cancellationToken: cancellationToken).NoSync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting secret {Name} for repository {Owner}/{Repo}", name, owner, repo);
+            throw;
+        }
+    }
 
-        GitHubClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+    public async ValueTask<(string KeyId, string Key)> GetPublicKey(string owner, string repo, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+            ActionsPublicKey? response = await client.Repos[owner][repo].Actions.Secrets.PublicKey.GetAsync(cancellationToken: cancellationToken).NoSync();
+            return (response.KeyId, response.Key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting public key for repository {Owner}/{Repo}", owner, repo);
+            throw;
+        }
+    }
 
-        await client.Repository.Actions.Secrets.Delete(owner, name, secretName).NoSync();
+    public async ValueTask CreateOrUpdate(string owner, string repo, string name, string value, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            (string keyId, string publicKey) = await GetPublicKey(owner, repo, cancellationToken).NoSync();
+
+            byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+
+            byte[] encryptedBytes = SealedPublicKeyBox.Create(System.Text.Encoding.UTF8.GetBytes(value), publicKeyBytes);
+
+            string encryptedValue = Convert.ToBase64String(encryptedBytes);
+
+            GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+
+            var requestBody = new WithSecret_namePutRequestBody
+            {
+                EncryptedValue = encryptedValue,
+                KeyId = keyId
+            };
+
+            await client.Repos[owner][repo].Actions.Secrets[name].PutAsync(requestBody, cancellationToken: cancellationToken).NoSync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating/updating secret {Name} for repository {Owner}/{Repo}", name, owner, repo);
+            throw;
+        }
+    }
+
+    public async ValueTask Delete(string owner, string repo, string name, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
+            await client.Repos[owner][repo].Actions.Secrets[name].DeleteAsync(cancellationToken: cancellationToken).NoSync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting secret {Name} for repository {Owner}/{Repo}", name, owner, repo);
+            throw;
+        }
     }
 }
