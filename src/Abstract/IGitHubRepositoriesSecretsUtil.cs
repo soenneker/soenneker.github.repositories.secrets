@@ -17,7 +17,7 @@ public interface IGitHubRepositoriesSecretsUtil
     /// <param name="repo">The name of the repository.</param>
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
     /// <returns>A list of secrets defined in the repository.</returns>
-    ValueTask<List<ActionsSecret>> Get(string owner, string repo, CancellationToken cancellationToken = default);
+    ValueTask<List<ActionsSecret>> GetAll(string owner, string repo, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves all organization-level secrets accessible by a given repository.
@@ -36,7 +36,7 @@ public interface IGitHubRepositoriesSecretsUtil
     /// <param name="name">The name of the secret.</param>
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
     /// <returns>The secret object if found.</returns>
-    ValueTask<ActionsSecret> Get(string owner, string repo, string name, CancellationToken cancellationToken = default);
+    ValueTask<ActionsSecret> GetAll(string owner, string repo, string name, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the public key for encrypting secrets in a repository.

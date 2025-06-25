@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Sodium;
+using Soenneker.Extensions.Arrays.Bytes;
+using Soenneker.Extensions.String;
 using Soenneker.Extensions.Task;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.GitHub.ClientUtil.Abstract;
@@ -30,15 +32,15 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         _gitHubClientUtil = gitHubClientUtil;
     }
 
-    /// <summary>
-    /// Gets all secrets for a repository
-    /// </summary>
-    public async ValueTask<List<ActionsSecret>> Get(string owner, string repo, CancellationToken cancellationToken = default)
+    public async ValueTask<List<ActionsSecret>> GetAll(string owner, string repo, CancellationToken cancellationToken = default)
     {
         try
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
-            SecretsGetResponse? response = await client.Repos[owner][repo].Actions.Secrets.GetAsSecretsGetResponseAsync(cancellationToken: cancellationToken).NoSync();
+
+            SecretsGetResponse? response =
+                await client.Repos[owner][repo].Actions.Secrets.GetAsSecretsGetResponseAsync(cancellationToken: cancellationToken).NoSync();
+
             return response?.Secrets ?? [];
         }
         catch (Exception ex)
@@ -53,8 +55,12 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         try
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
-            OrganizationSecretsGetResponse? response = await client.Repos[owner][repo].Actions.OrganizationSecrets.GetAsOrganizationSecretsGetResponseAsync(cancellationToken: cancellationToken).NoSync();
-            return response?.Secrets ?? new List<ActionsSecret>();
+
+            OrganizationSecretsGetResponse? response = await client.Repos[owner][repo]
+                                                                   .Actions.OrganizationSecrets
+                                                                   .GetAsOrganizationSecretsGetResponseAsync(cancellationToken: cancellationToken)
+                                                                   .NoSync();
+            return response?.Secrets ?? [];
         }
         catch (Exception ex)
         {
@@ -63,7 +69,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         }
     }
 
-    public async ValueTask<ActionsSecret> Get(string owner, string repo, string name, CancellationToken cancellationToken = default)
+    public async ValueTask<ActionsSecret> GetAll(string owner, string repo, string name, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -98,11 +104,11 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         {
             (string keyId, string publicKey) = await GetPublicKey(owner, repo, cancellationToken).NoSync();
 
-            byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+            byte[] publicKeyBytes = publicKey.ToBytesFromBase64();
 
-            byte[] encryptedBytes = SealedPublicKeyBox.Create(System.Text.Encoding.UTF8.GetBytes(value), publicKeyBytes);
+            byte[] encryptedBytes = SealedPublicKeyBox.Create(value.ToBytes(), publicKeyBytes);
 
-            string encryptedValue = Convert.ToBase64String(encryptedBytes);
+            string encryptedValue = encryptedBytes.ToBase64String();
 
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
