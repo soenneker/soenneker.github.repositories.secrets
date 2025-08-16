@@ -39,7 +39,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
             SecretsGetResponse? response =
-                await client.Repos[owner][repo].Actions.Secrets.GetAsSecretsGetResponseAsync(cancellationToken: cancellationToken).NoSync();
+                await client.Repos[owner][repo].Actions.Secrets.GetAsync(cancellationToken: cancellationToken).NoSync();
 
             return response?.Secrets ?? [];
         }
@@ -58,7 +58,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
 
             OrganizationSecretsGetResponse? response = await client.Repos[owner][repo]
                                                                    .Actions.OrganizationSecrets
-                                                                   .GetAsOrganizationSecretsGetResponseAsync(cancellationToken: cancellationToken)
+                                                                   .GetAsync(cancellationToken: cancellationToken)
                                                                    .NoSync();
             return response?.Secrets ?? [];
         }
