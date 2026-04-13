@@ -112,7 +112,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
 
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-            var requestBody = new WithSecret_namePutRequestBody
+            var requestBody = new ActionsCreateOrUpdateRepoSecret
             {
                 EncryptedValue = encryptedValue,
                 KeyId = keyId
