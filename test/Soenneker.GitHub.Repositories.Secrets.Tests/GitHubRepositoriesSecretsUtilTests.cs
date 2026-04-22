@@ -1,20 +1,19 @@
 using Soenneker.GitHub.Repositories.Secrets.Abstract;
-using Soenneker.Tests.FixturedUnit;
-using Xunit;
+using Soenneker.Tests.HostedUnit;
 
 namespace Soenneker.GitHub.Repositories.Secrets.Tests;
 
-[Collection("Collection")]
-public class GitHubRepositoriesSecretsUtilTests : FixturedUnitTest
+[ClassDataSource<Host>(Shared = SharedType.PerTestSession)]
+public class GitHubRepositoriesSecretsUtilTests : HostedUnitTest
 {
     private readonly IGitHubRepositoriesSecretsUtil _util;
 
-    public GitHubRepositoriesSecretsUtilTests(Fixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public GitHubRepositoriesSecretsUtilTests(Host host) : base(host)
     {
         _util = Resolve<IGitHubRepositoriesSecretsUtil>(true);
     }
 
-    [Fact]
+    [Test]
     public void Default()
     { }
 }
