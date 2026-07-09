@@ -38,7 +38,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-            SecretsGetResponse? response =
+            ActionsListRepoSecrets200Response? response =
                 await client.Repos[owner][repo].Actions.Secrets.GetAsync(cancellationToken: cancellationToken).NoSync();
 
             return response?.Secrets ?? [];
@@ -56,7 +56,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-            OrganizationSecretsGetResponse? response = await client.Repos[owner][repo]
+            ActionsListRepoOrganizationSecrets200Response? response = await client.Repos[owner][repo]
                                                                    .Actions.OrganizationSecrets
                                                                    .GetAsync(cancellationToken: cancellationToken)
                                                                    .NoSync();
@@ -74,7 +74,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         try
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
-            return await client.Repos[owner][repo].Actions.Secrets[name].GetAsync(cancellationToken: cancellationToken).NoSync();
+            return (await client.Repos[owner][repo].Actions.Secrets[name].GetAsync(cancellationToken: cancellationToken).NoSync())!;
         }
         catch (Exception ex)
         {
@@ -89,7 +89,8 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
             ActionsPublicKey? response = await client.Repos[owner][repo].Actions.Secrets.PublicKey.GetAsync(cancellationToken: cancellationToken).NoSync();
-            return (response.KeyId, response.Key);
+
+            return (response!.KeyId!, response.Key!);
         }
         catch (Exception ex)
         {
@@ -112,7 +113,7 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
 
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-            var requestBody = new ActionsCreateOrUpdateRepoSecret
+            var requestBody = new ActionsCreateOrUpdateRepoSecretRequest
             {
                 EncryptedValue = encryptedValue,
                 KeyId = keyId
