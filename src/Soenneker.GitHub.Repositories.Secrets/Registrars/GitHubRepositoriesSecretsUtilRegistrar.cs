@@ -6,7 +6,7 @@ using Soenneker.GitHub.Repositories.Secrets.Abstract;
 namespace Soenneker.GitHub.Repositories.Secrets.Registrars;
 
 /// <summary>
-/// A utility library for GitHub Repository Secret related operations
+/// Registers services for listing and managing GitHub Actions repository secrets.
 /// </summary>
 public static class GitHubRepositoriesSecretsUtilRegistrar
 {

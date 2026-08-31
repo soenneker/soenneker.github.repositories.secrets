@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Soenneker.GitHub.Repositories.Secrets.Abstract;
 
 /// <summary>
-/// Provides utilities for managing GitHub repository secrets, including reading, writing, and deleting secrets.
+/// Lists GitHub Actions secret metadata and creates, replaces, or deletes repository secrets.
 /// </summary>
 public interface IGitHubRepositoriesSecretsUtil
 {
@@ -16,7 +16,7 @@ public interface IGitHubRepositoriesSecretsUtil
     /// <param name="owner">The owner of the repository (user or organization).</param>
     /// <param name="repo">The name of the repository.</param>
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
-    /// <returns>A list of secrets defined in the repository.</returns>
+    /// <returns>Metadata for secrets defined in the repository. Secret values are never returned by GitHub.</returns>
     ValueTask<List<ActionsSecret>> GetAll(string owner, string repo, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -25,7 +25,7 @@ public interface IGitHubRepositoriesSecretsUtil
     /// <param name="owner">The owner of the repository (user or organization).</param>
     /// <param name="repo">The name of the repository.</param>
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
-    /// <returns>A list of organization secrets available to the repository.</returns>
+    /// <returns>Metadata for organization secrets available to the repository. Secret values are never returned by GitHub.</returns>
     ValueTask<List<ActionsSecret>> GetOrganization(string owner, string repo, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -35,7 +35,7 @@ public interface IGitHubRepositoriesSecretsUtil
     /// <param name="repo">The name of the repository.</param>
     /// <param name="name">The name of the secret.</param>
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
-    /// <returns>The secret object if found.</returns>
+    /// <returns>Metadata for the secret. Its stored value is never returned by GitHub.</returns>
     ValueTask<ActionsSecret> GetAll(string owner, string repo, string name, CancellationToken cancellationToken = default);
 
     /// <summary>

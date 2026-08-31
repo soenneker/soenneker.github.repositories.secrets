@@ -18,9 +18,6 @@ using System.Threading.Tasks;
 
 namespace Soenneker.GitHub.Repositories.Secrets;
 
-/// <summary>
-/// Utility class for managing GitHub repository secrets
-/// </summary>
 public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
 {
     private readonly ILogger<GitHubRepositoriesSecretsUtil> _logger;
@@ -38,10 +35,30 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-            ActionsListRepoSecrets200Response? response =
-                await client.Repos[owner][repo].Actions.Secrets.GetAsync(cancellationToken: cancellationToken).NoSync();
+            var secrets = new List<ActionsSecret>();
+            var page = 1;
+            const int perPage = 100;
 
-            return response?.Secrets ?? [];
+            while (true)
+            {
+                ActionsListRepoSecrets200Response? response = await client.Repos[owner][repo].Actions.Secrets.GetAsync(requestConfiguration =>
+                {
+                    requestConfiguration.QueryParameters.Page = page;
+                    requestConfiguration.QueryParameters.PerPage = perPage;
+                }, cancellationToken).NoSync();
+
+                if (response?.Secrets == null || response.Secrets.Count == 0)
+                    break;
+
+                secrets.AddRange(response.Secrets);
+
+                if (response.Secrets.Count < perPage)
+                    break;
+
+                page++;
+            }
+
+            return secrets;
         }
         catch (Exception ex)
         {
@@ -56,11 +73,31 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
         {
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
 
-            ActionsListRepoOrganizationSecrets200Response? response = await client.Repos[owner][repo]
-                                                                   .Actions.OrganizationSecrets
-                                                                   .GetAsync(cancellationToken: cancellationToken)
-                                                                   .NoSync();
-            return response?.Secrets ?? [];
+            var secrets = new List<ActionsSecret>();
+            var page = 1;
+            const int perPage = 100;
+
+            while (true)
+            {
+                ActionsListRepoOrganizationSecrets200Response? response = await client.Repos[owner][repo]
+                    .Actions.OrganizationSecrets.GetAsync(requestConfiguration =>
+                    {
+                        requestConfiguration.QueryParameters.Page = page;
+                        requestConfiguration.QueryParameters.PerPage = perPage;
+                    }, cancellationToken).NoSync();
+
+                if (response?.Secrets == null || response.Secrets.Count == 0)
+                    break;
+
+                secrets.AddRange(response.Secrets);
+
+                if (response.Secrets.Count < perPage)
+                    break;
+
+                page++;
+            }
+
+            return secrets;
         }
         catch (Exception ex)
         {
@@ -90,7 +127,10 @@ public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUt
             GitHubOpenApiClient client = await _gitHubClientUtil.Get(cancellationToken).NoSync();
             ActionsPublicKey? response = await client.Repos[owner][repo].Actions.Secrets.PublicKey.GetAsync(cancellationToken: cancellationToken).NoSync();
 
-            return (response!.KeyId!, response.Key!);
+            if (response?.KeyId == null || response.Key == null)
+                throw new InvalidOperationException("GitHub did not return the repository secret encryption key.");
+
+            return (response.KeyId, response.Key);
         }
         catch (Exception ex)
         {
