@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 
 namespace Soenneker.GitHub.Repositories.Secrets;
 
+/// <inheritdoc cref="IGitHubRepositoriesSecretsUtil" />
 public sealed class GitHubRepositoriesSecretsUtil : IGitHubRepositoriesSecretsUtil
 {
     private readonly ILogger<GitHubRepositoriesSecretsUtil> _logger;
